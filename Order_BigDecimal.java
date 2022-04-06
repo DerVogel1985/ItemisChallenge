@@ -8,16 +8,16 @@ import java.util.ArrayList;
 public class Order_BigDecimal{
 	
 	private ArrayList<Order_Pos> order = new ArrayList<Order_Pos>();
-	private double tax_amount;
+	private BigDecimal tax_amount;
 	private BigDecimal tax_total = new BigDecimal(0.0);
-	private double cost_total;
+	private BigDecimal cost_total = new BigDecimal(0.0);
 	
 	//getter and setter
-	public void setTax_Amount(double tax_amount) {
+	public void setTax_Amount(BigDecimal tax_amount) {
 		this.tax_amount = tax_amount;
 	}
 	
-	public double getTax_Amount() {
+	public BigDecimal getTax_Amount() {
 		return tax_amount;
 	}
 	
@@ -29,11 +29,11 @@ public class Order_BigDecimal{
 		return tax_total;
 	}
 	
-	public void setCost_total(double cost_total) {
+	public void setCost_total(BigDecimal cost_total) {
 		this.cost_total = cost_total;
 	}
 	
-	public double getCost_total() {
+	public BigDecimal getCost_total() {
 		return cost_total;
 	}
 	
@@ -51,37 +51,30 @@ public class Order_BigDecimal{
 		
 		//for loop that runs as many times as Order_Pos are created for the Order
 		for(int i=0;i<order.size();i++) {
-			int tax_rate=0;
+			BigDecimal tax_rate = new BigDecimal(0.0);
 			//checks if the order has an imported product. if so, 5% will be added to the tax_rate.
 			if(order.get(i).imported) {
-				tax_rate+=5;
+				tax_rate = tax_rate.add(new BigDecimal(5));
 			}
 			//checks if product belongs to one of the three tax-free categories. if so, no tax will be added. if not the tax rate will be raised by 10%
 			if(contains(books, order.get(i).category) || contains(food, order.get(i).category) || contains(medical, order.get(i).category)) {
-				tax_rate += 0;
+				tax_rate = tax_rate.add(new BigDecimal(0));
 			}
 			else {
-				tax_rate += 10;
+				tax_rate = tax_rate.add(new BigDecimal(10));
 			}
 			
-		
-			System.out.println( Math.ceil(((order.get(i).price*tax_rate) / 100)*20.0)/20.0);
-			tax = new BigDecimal(Math.ceil(((order.get(i).price*tax_rate) / 100)*20.0)/20.0);
-			System.out.println(tax);
+			//Tax per product gets calculated
+			tax = (order.get(i).price.multiply(tax_rate).divide(new BigDecimal(100)));
 			tax_rounded = tax;
-			tax_rounded = tax_rounded.setScale(2, RoundingMode.CEILING);
-			tax_rounded = tax_rounded.multiply(tax_interval);
-			//here is the Problem. The Sales Tax for "Order two" gets rounded up from 152.60 to 153.00 but the Sales Tax for "Order three" doesn´t and remains on 133.40 before and after. :(
-			tax_rounded = tax_rounded.round(new MathContext(3, RoundingMode.CEILING));
-			//tax_rounded = tax_rounded.setScale(2, RoundingMode.CEILING);
-			//tax_rounded = tax_rounded.divide(tax_interval);
-			//tax_rounded = tax_rounded.setScale(2, RoundingMode.CEILING);
-
+			//cut decimal to 2 numbers after comma, then multiply with "20.0" round up and divide by "20.0" to get the 0.05 upwards steps
+			tax_rounded = tax_rounded.setScale(2, RoundingMode.CEILING).multiply(tax_interval).round(new MathContext(3, RoundingMode.CEILING)).divide(tax_interval);
+			//total tax is calculated by adding up the single product taxes
 			tax_total = tax_total.add(tax_rounded);
-			//order.get(i).price = Math.round((order.get(i).price*(100 + tax_rate) / 100)/interval)*interval;
-			//order.get(i).price = (order.get(i).price + Math.ceil(((order.get(i).price/100) * tax_rate)/interval)*interval);
-			order.get(i).price = Math.round((order.get(i).price + Math.ceil(((order.get(i).price*tax_rate) / 100)*20.0)/20.0)*100.0)/100.0;
-			cost_total += order.get(i).price;
+			//new taxed price is saved back to variable
+			order.get(i).price = order.get(i).price.setScale(2, RoundingMode.HALF_UP).add(tax_rounded);
+			//adding up all new product costs to get the total price
+			cost_total = cost_total.add(order.get(i).price);
 		}
 	}
 	
@@ -127,17 +120,17 @@ public class Order_BigDecimal{
 		
 		//Here we create 3 different Orders and fill them up with different amount of Order_Pos. With the exact same information from the working sheet.
 		Order_BigDecimal one = new Order_BigDecimal();
-		one.order.add(one.new Order_Pos(1, "book", false, 12.49));
-		one.order.add(one.new Order_Pos(1, "music CD", false, 14.99));
-		one.order.add(one.new Order_Pos(1, "chocolate bar", false, 0.85));
+		one.order.add(one.new Order_Pos(new BigInteger("1"), "book", false, new BigDecimal(12.49)));
+		one.order.add(one.new Order_Pos(new BigInteger("1"), "music CD", false, new BigDecimal(14.99)));
+		one.order.add(one.new Order_Pos(new BigInteger("1"), "chocolate bar", false, new BigDecimal(0.85)));
 		Order_BigDecimal two = new Order_BigDecimal();
-		two.order.add(two.new Order_Pos(1, "box of chocolates", true, 10.00));
-		two.order.add(two.new Order_Pos(1, "bottle of perfume", true, 47.50));
+		two.order.add(two.new Order_Pos(new BigInteger("1"), "box of chocolates", true, new BigDecimal(10.00)));
+		two.order.add(two.new Order_Pos(new BigInteger("1"), "bottle of perfume", true, new BigDecimal(47.50)));
 		Order_BigDecimal three = new Order_BigDecimal();
-		three.order.add(three.new Order_Pos(1, "bottle of perfume", true, 27.99));
-		three.order.add(three.new Order_Pos(1, "bottle of perfume", false, 18.99));
-		three.order.add(three.new Order_Pos(1, "packet of headache pills", false, 9.75));
-		three.order.add(three.new Order_Pos(1, "box of chocolates", true, 11.25));
+		three.order.add(three.new Order_Pos(new BigInteger("1"), "bottle of perfume", true, new BigDecimal(27.99)));
+		three.order.add(three.new Order_Pos(new BigInteger("1"), "bottle of perfume", false, new BigDecimal(18.99)));
+		three.order.add(three.new Order_Pos(new BigInteger("1"), "packet of headache pills", false, new BigDecimal(9.75)));
+		three.order.add(three.new Order_Pos(new BigInteger("1"), "box of chocolates", true, new BigDecimal(11.25)));
 		one.close_order();
 		two.close_order();
 		three.close_order();
@@ -148,13 +141,13 @@ public class Order_BigDecimal{
 //handels every position in an order object-oriented. 
  class Order_Pos{
  
-	private int amount;
+	private BigInteger amount;
 	private String category;
 	private boolean imported;
-	private double price;
+	private BigDecimal price;
 	
 	//We offer only one constructor, that takes all 4 necessary parameter. 
-	public Order_Pos(int amount, String category, boolean imported, double price) {
+	public Order_Pos(BigInteger amount, String category, boolean imported, BigDecimal price) {
 		this.amount = amount;
 		this.category = category;
 		this.imported = imported;
@@ -162,11 +155,11 @@ public class Order_BigDecimal{
 	}
 	
 	//getter and setter 
-	public void setAmount(int amount) {
+	public void setAmount(BigInteger amount) {
 		this.amount = amount;
 	}
 	
-	public int getAmount() {
+	public BigInteger getAmount() {
 		return amount;
 	}
 	
@@ -186,11 +179,11 @@ public class Order_BigDecimal{
 		return imported;
 	}
 	
-	public void setPrice(double price) {
+	public void setPrice(BigDecimal price) {
 		this.price = price;
 	}
 	
-	public double getPrice() {
+	public BigDecimal getPrice() {
 		return price;
 	}
 	
